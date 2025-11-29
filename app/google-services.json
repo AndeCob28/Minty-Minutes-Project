@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "54903874479",
+    "project_id": "minty-minutes-cloud",
+    "storage_bucket": "minty-minutes-cloud.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:54903874479:android:2816000c5f6e783c01c55a",
+        "android_client_info": {
+          "package_name": "com.example.mintyminutes"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBRYoFkfQqvv5ZAULQ9SrbZulR9Ke0gsYg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

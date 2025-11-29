@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@android:color/white">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Add Reminder"
+        android:textColor="@color/text_primary"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_gravity="center"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Period Buttons -->
+    <Button
+        android:id="@+id/morningBtn"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Morning"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textAllCaps="false"
+        android:background="@drawable/rounded_button"
+        android:backgroundTint="@color/blue_500"
+        android:foreground="?attr/selectableItemBackground"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/afternoonBtn"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Afternoon"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textAllCaps="false"
+        android:background="@drawable/rounded_button"
+        android:backgroundTint="@color/blue_500"
+        android:foreground="?attr/selectableItemBackground"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/eveningBtn"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Evening"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textAllCaps="false"
+        android:background="@drawable/rounded_button"
+        android:backgroundTint="@color/blue_500"
+        android:foreground="?attr/selectableItemBackground"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Set Time Section -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Set Time:"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp"
+        android:layout_gravity="center"
+        android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:id="@+id/timeDisplay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="_:_ _ PM - _:_ _ PM"
+        android:textColor="@color/blue_500"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:clickable="true"
+        android:focusable="true"
+        android:padding="8dp"
+        android:layout_gravity="center"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Confirm Button -->
+    <Button
+        android:id="@+id/confirmBtn"
+        android:layout_width="160dp"
+        android:layout_height="48dp"
+        android:text="Confirm"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:textAllCaps="false"
+        android:background="@drawable/rounded_button"
+        android:backgroundTint="@color/blue_500"
+        android:layout_gravity="center" />
+
+</LinearLayout>
