@@ -47,5 +47,10 @@
             android:exported="false"
             android:theme="@style/Theme.MintyMinutes" />
 
+        <activity
+            android:name=".ForgotPasswordActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MintyMinutes" />
+
     </application>
 </manifest>

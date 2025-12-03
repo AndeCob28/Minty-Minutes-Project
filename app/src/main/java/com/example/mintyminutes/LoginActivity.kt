@@ -72,6 +72,11 @@ class LoginActivity : AppCompatActivity(), LoginPresenter.LoginView {
             val intent = Intent(this, RegisterActivity::class.java)
             startActivity(intent)
         }
+        val forgotPasswordText = findViewById<TextView>(R.id.forgotPassword)
+        forgotPasswordText.setOnClickListener {
+            val intent = Intent(this, ForgotPasswordActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     // MVP View interface implementations
