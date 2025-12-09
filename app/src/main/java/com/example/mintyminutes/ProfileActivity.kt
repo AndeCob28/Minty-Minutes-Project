@@ -10,6 +10,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.material.navigation.NavigationView
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.UserProfileChangeRequest
+import com.google.firebase.database.FirebaseDatabase
 
 class ProfileActivity : AppCompatActivity() {
 
@@ -29,6 +32,7 @@ class ProfileActivity : AppCompatActivity() {
         initializeViews()
         setupClickListeners()
         setupSidebarMenu()
+        populateCurrentData() // ADD THIS LINE
     }
 
     private fun initializeViews() {
@@ -42,23 +46,45 @@ class ProfileActivity : AppCompatActivity() {
         saveChangesBtn = findViewById(R.id.saveChangesBtn)
     }
 
+    // ADD THIS METHOD TO POPULATE CURRENT USER DATA
+    private fun populateCurrentData() {
+        // Get data passed from ProfileViewActivity
+        val currentName = intent.getStringExtra("current_name")
+        val currentEmail = intent.getStringExtra("current_email")
+        val currentPhone = intent.getStringExtra("current_phone")
+
+        // Pre-fill the EditText fields with current data
+        if (currentName != null && currentName != "Loading...") {
+            fullNameEdit.setText(currentName)
+        }
+
+        if (currentEmail != null && currentEmail != "Loading...") {
+            emailEdit.setText(currentEmail)
+        }
+
+        if (currentPhone != null && currentPhone != "Loading...") {
+            phoneEdit.setText(currentPhone)
+        }
+    }
+
     private fun setupClickListeners() {
         // Menu icon click listener
         menuIcon.setOnClickListener {
             drawerLayout.openDrawer(GravityCompat.START)
         }
 
-        // Save changes button
+        // Save changes button - UPDATE THIS
         saveChangesBtn.setOnClickListener {
-            val fullName = fullNameEdit.text.toString()
-            val email = emailEdit.text.toString()
-            val phone = phoneEdit.text.toString()
+            val fullName = fullNameEdit.text.toString().trim()
+            val email = emailEdit.text.toString().trim()
+            val phone = phoneEdit.text.toString().trim()
+            val password = passwordEdit.text.toString().trim()
 
             if (fullName.isNotEmpty() && email.isNotEmpty() && phone.isNotEmpty()) {
-                Toast.makeText(this, "Profile updated successfully!", Toast.LENGTH_SHORT).show()
-                // TODO: Save to database or shared preferences
+                // Save to Firebase Database
+                saveProfileToFirebase(fullName, email, phone, password)
             } else {
-                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Please fill all required fields", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -94,6 +120,61 @@ class ProfileActivity : AppCompatActivity() {
                 }
                 else -> false
             }
+        }
+    }
+
+    // ADD THIS METHOD TO SAVE TO FIREBASE
+    private fun saveProfileToFirebase(name: String, email: String, phone: String, password: String) {
+        // Show loading
+        saveChangesBtn.isEnabled = false
+        saveChangesBtn.text = "Saving..."
+
+        // Get current user
+        val auth = FirebaseAuth.getInstance()
+        val currentUser = auth.currentUser
+
+        if (currentUser != null) {
+            val userId = currentUser.uid
+            val database = FirebaseDatabase.getInstance("https://minty-minutes-cloud-default-rtdb.asia-southeast1.firebasedatabase.app/")
+
+            // Update user data in Firebase Database
+            val userUpdates = hashMapOf<String, Any>(
+                "name" to name,
+                "email" to email,
+                "phone" to phone
+                // Note: Password cannot be updated directly - use Firebase Auth for password updates
+            )
+
+            database.getReference("users").child(userId)
+                .updateChildren(userUpdates)
+                .addOnSuccessListener {
+                    Toast.makeText(this, "Profile updated successfully!", Toast.LENGTH_SHORT).show()
+
+                    // Update Firebase Auth profile if needed
+                    val profileUpdates = UserProfileChangeRequest.Builder()
+                        .setDisplayName(name)
+                        .build()
+
+                    currentUser.updateProfile(profileUpdates)
+                        .addOnCompleteListener { profileTask ->
+                            if (profileTask.isSuccessful) {
+                                // Navigate back to Profile View
+                                val intent = Intent(this, ProfileViewActivity::class.java)
+                                intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                                startActivity(intent)
+                                finish()
+                            }
+                        }
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Failed to update profile: ${e.message}", Toast.LENGTH_SHORT).show()
+                    saveChangesBtn.isEnabled = true
+                    saveChangesBtn.text = "SAVE CHANGES"
+                }
+        } else {
+            Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show()
+            saveChangesBtn.isEnabled = true
+            saveChangesBtn.text = "SAVE CHANGES"
         }
     }
 

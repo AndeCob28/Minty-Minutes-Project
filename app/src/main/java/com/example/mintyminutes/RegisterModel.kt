@@ -25,7 +25,8 @@ class RegisterModel {
     suspend fun registerUser(
         name: String,
         email: String,
-        password: String
+        password: String,
+        phone: String // ADDED: Phone number parameter
     ): RegisterResult {
         return try {
             // TEAM: REPLACED mock registration with real Firebase Auth
@@ -43,7 +44,7 @@ class RegisterModel {
 
                 // TEAM: NEW - Save user data to Realtime Database
                 // SAVE USER DATA TO REALTIME DATABASE
-                saveUserToDatabase(user.uid, name, email)
+                saveUserToDatabase(user.uid, name, email, phone) // UPDATED: Added phone parameter
 
                 RegisterResult.Success
             } else {
@@ -79,12 +80,13 @@ class RegisterModel {
      * Creates user document with MintyMinutes defaults
      * Called after successful Firebase Auth registration
      */
-    private suspend fun saveUserToDatabase(userId: String, name: String, email: String) {
+    private suspend fun saveUserToDatabase(userId: String, name: String, email: String, phone: String) {
         try {
             val user = User(
                 id = userId,
                 name = name,
                 email = email,
+                phone = phone, // ADDED: Phone number field
                 dailyGoal = 3, // Default goal: 3 brushing sessions per day
                 streak = 0,
                 totalSessions = 0,

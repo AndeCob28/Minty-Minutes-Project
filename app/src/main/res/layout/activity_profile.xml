@@ -5,54 +5,55 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Main Content -->
-    <ScrollView
+    <!-- Main Content Layout -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/background_gray"
-        android:fillViewport="true">
+        android:orientation="vertical">
 
+        <!-- Fixed Header (Outside ScrollView) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:background="@drawable/gradient_header_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
 
-            <!-- Gradient Header -->
+            <ImageView
+                android:id="@+id/menuIcon"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:contentDescription="Menu"
+                android:src="@drawable/ic_menu"
+                android:clickable="true"
+                android:focusable="true"
+                app:tint="@android:color/white" />
+
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/gradient_header_bg"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:layout_height="45dp"
+                android:gravity="center"
+                android:orientation="horizontal">
 
-                <ImageView
-                    android:id="@+id/menuIcon"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:contentDescription="Menu"
-                    android:src="@drawable/ic_menu"
-                    android:clickable="true"
-                    android:focusable="true"
-                    app:tint="@android:color/white" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="45dp"
-                    android:gravity="center"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="MintyMinutes"
-                        android:textColor="@android:color/white"
-                        android:textSize="20sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="MintyMinutes"
+                    android:textColor="@android:color/white"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- Profile Content -->
+        </LinearLayout>
+
+        <!-- Scrollable Content Only -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@color/background_gray"
+            android:fillViewport="true">
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -195,9 +196,9 @@
 
             </LinearLayout>
 
-        </LinearLayout>
+        </ScrollView>
 
-    </ScrollView>
+    </LinearLayout>
 
     <!-- Navigation Drawer (Sidebar) -->
     <com.google.android.material.navigation.NavigationView

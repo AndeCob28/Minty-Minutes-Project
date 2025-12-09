@@ -12,6 +12,7 @@ data class User(
     val id: String = "",
     val name: String = "",
     val email: String = "",
+    val phone: String = "",
     val dailyGoal: Int = 3,  // Default: 3 brushing sessions per day
     val streak: Int = 0,     // Current streak in days
     val totalSessions: Int = 0,

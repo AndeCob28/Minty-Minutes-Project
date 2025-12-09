@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawerLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ProfileViewActivity">
+
+    <!-- Main Content Layout -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- Fixed Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/gradient_header_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <ImageView
+                android:id="@+id/menuIcon"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:contentDescription="Menu"
+                android:src="@drawable/ic_menu"
+                android:clickable="true"
+                android:focusable="true"
+                app:tint="@android:color/white" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="My Profile"
+                    android:textColor="@android:color/white"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Scrollable Profile Content -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@color/background_gray"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp"
+                android:gravity="center_horizontal">
+
+                <!-- Profile Photo -->
+                <ImageView
+                    android:id="@+id/profileImage"
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
+                    android:layout_marginTop="16dp"
+                    android:src="@drawable/ic_profile"
+                    android:scaleType="centerCrop" />
+
+                <!-- Edit Profile Button -->
+                <Button
+                    android:id="@+id/editProfileButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="16dp"
+                    android:text="EDIT PROFILE"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:background="@drawable/rounded_button"
+                    android:backgroundTint="@color/blue_500"
+                    android:textColor="@android:color/white"
+                    android:paddingHorizontal="24dp" />
+
+                <!-- Profile Information Card -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="32dp"
+                    android:orientation="vertical"
+                    android:background="@drawable/card_background"
+                    android:padding="24dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Personal Information"
+                        android:textStyle="bold"
+                        android:textSize="18sp"
+                        android:textColor="@android:color/black"
+                        android:layout_marginBottom="24dp" />
+
+                    <!-- Full Name -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginBottom="20dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Full Name"
+                            android:textStyle="bold"
+                            android:textSize="12sp"
+                            android:textColor="@color/text_secondary"
+                            android:layout_marginBottom="4dp" />
+
+                        <TextView
+                            android:id="@+id/fullNameView"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Loading..."
+                            android:textSize="16sp"
+                            android:textColor="@color/text_primary" />
+
+                    </LinearLayout>
+
+                    <!-- Email Address -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginBottom="20dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Email Address"
+                            android:textStyle="bold"
+                            android:textSize="12sp"
+                            android:textColor="@color/text_secondary"
+                            android:layout_marginBottom="4dp" />
+
+                        <TextView
+                            android:id="@+id/emailView"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Loading..."
+                            android:textSize="16sp"
+                            android:textColor="@color/text_primary" />
+
+                    </LinearLayout>
+
+                    <!-- Phone Number -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginBottom="20dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Phone Number"
+                            android:textStyle="bold"
+                            android:textSize="12sp"
+                            android:textColor="@color/text_secondary"
+                            android:layout_marginBottom="4dp" />
+
+                        <TextView
+                            android:id="@+id/phoneView"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Loading..."
+                            android:textSize="16sp"
+                            android:textColor="@color/text_primary" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </ScrollView>
+
+    </LinearLayout>
+
+    <!-- Navigation Drawer -->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/navigationView"
+        android:layout_width="280dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:fitsSystemWindows="true"
+        app:headerLayout="@layout/nav_header"
+        app:menu="@menu/drawer_menu" />
+
+</androidx.drawerlayout.widget.DrawerLayout>

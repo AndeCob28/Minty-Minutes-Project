@@ -101,6 +101,30 @@
                 android:layout_marginStart="16dp"
                 android:visibility="gone" />
 
+            <!-- Contact Number Input -->
+            <EditText
+                android:id="@+id/contactInput"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:hint="Contact Number"
+                android:inputType="phone"
+                android:background="@drawable/input_background"
+                android:padding="16dp"
+                android:textSize="16sp"
+                android:textColorHint="#94A3B8"
+                android:layout_marginTop="16dp" />
+
+            <TextView
+                android:id="@+id/contactError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="#EF4444"
+                android:textSize="12sp"
+                android:layout_marginTop="4dp"
+                android:layout_marginStart="16dp"
+                android:visibility="gone" />
+
             <!-- Password Input -->
             <EditText
                 android:id="@+id/passwordInput"
@@ -124,6 +148,7 @@
                 android:layout_marginTop="4dp"
                 android:layout_marginStart="16dp"
                 android:visibility="gone" />
+
 
             <!-- Confirm Password Input -->
             <EditText
