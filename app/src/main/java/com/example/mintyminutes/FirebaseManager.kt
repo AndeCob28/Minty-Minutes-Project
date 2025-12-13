@@ -1,6 +1,8 @@
 package com.example.mintyminutes
 
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -9,36 +11,176 @@ import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.*
 
-/**
- * Centralized Firebase manager for user-specific data operations
- * Handles schedules, notifications, sessions, progress, and device status
- */
 class FirebaseManager {
+
+    companion object {
+        private const val TAG = "FirebaseManager"
+    }
 
     private val auth = FirebaseAuth.getInstance()
     private val database = FirebaseDatabase.getInstance(
         "https://minty-minutes-cloud-default-rtdb.asia-southeast1.firebasedatabase.app/"
     )
 
-    // Get current user ID
+    // ==================== USER INFO ====================
+
     fun getCurrentUserId(): String? {
-        return auth.currentUser?.uid
+        return try {
+            val userId = auth.currentUser?.uid
+            Log.d(TAG, "getCurrentUserId(): $userId")
+            userId
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in getCurrentUserId(): ${e.message}")
+            null
+        }
     }
 
-    // Get today's date in YYYY-MM-DD format
+    fun getUserEmail(): String? {
+        return try {
+            val user = auth.currentUser
+            val email = user?.email
+            Log.d(TAG, "getUserEmail(): $email")
+            email
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in getUserEmail(): ${e.message}")
+            null
+        }
+    }
+
+    fun isUserLoggedIn(): Boolean {
+        return try {
+            val isLoggedIn = auth.currentUser != null
+            Log.d(TAG, "isUserLoggedIn(): $isLoggedIn")
+            isLoggedIn
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in isUserLoggedIn(): ${e.message}")
+            false
+        }
+    }
+
+    // ==================== ACCOUNT DELETION ====================
+
+    /**
+     * Delete current user account immediately
+     * Returns DeletionResult (Success or Error)
+     */
+    suspend fun deleteCurrentUserAccountImmediately(password: String): DeletionResult {
+        Log.d(TAG, "deleteCurrentUserAccountImmediately() started")
+
+        return try {
+            val user = auth.currentUser
+            if (user == null) {
+                Log.e(TAG, "No user logged in")
+                return DeletionResult.Error("No user logged in")
+            }
+
+            val userId = user.uid
+            val userEmail = user.email
+            Log.d(TAG, "Deleting account for user: $userId, email: $userEmail")
+
+            // Step 1: Re-authenticate user (required by Firebase for deletion)
+            if (userEmail.isNullOrEmpty()) {
+                return DeletionResult.Error("User email not found")
+            }
+
+            Log.d(TAG, "Re-authenticating user...")
+            val credential = EmailAuthProvider.getCredential(userEmail, password)
+            user.reauthenticate(credential).await()
+
+            // Step 2: Delete all user data from Firebase Database
+            Log.d(TAG, "Deleting user data from database...")
+            val databaseDeletionResult = deleteAllUserData(userId)
+            if (!databaseDeletionResult) {
+                return DeletionResult.Error("Failed to delete user data from database")
+            }
+
+            // Step 3: Delete user from Firebase Authentication
+            Log.d(TAG, "Deleting user from Firebase Authentication...")
+            user.delete().await()
+
+            // Step 4: Sign out locally
+            auth.signOut()
+
+            Log.d(TAG, "Account deletion completed successfully")
+            DeletionResult.Success("Account and all data deleted successfully")
+
+        } catch (e: com.google.firebase.auth.FirebaseAuthInvalidCredentialsException) {
+            Log.e(TAG, "Invalid password: ${e.message}")
+            DeletionResult.Error("Invalid password. Please try again.")
+
+        } catch (e: com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException) {
+            Log.e(TAG, "Re-authentication required: ${e.message}")
+            DeletionResult.Error("Re-authentication required. Please login again.")
+
+        } catch (e: com.google.firebase.auth.FirebaseAuthException) {
+            Log.e(TAG, "Firebase auth error: ${e.message}")
+            DeletionResult.Error("Authentication error: ${e.message ?: "Unknown error"}")
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error during account deletion: ${e.message}", e)
+            DeletionResult.Error("Failed to delete account: ${e.message ?: "Unknown error"}")
+        }
+    }
+
+    /**
+     * Delete all user data from Firebase Realtime Database
+     */
+    private suspend fun deleteAllUserData(userId: String): Boolean {
+        Log.d(TAG, "deleteAllUserData() for user: $userId")
+
+        return try {
+            // Delete entire user node and all sub-nodes
+            val userRef = database.getReference("users").child(userId)
+
+            // Get all child references to delete
+            val childRefs = listOf(
+                userRef.child("schedules"),
+                userRef.child("notifications"),
+                userRef.child("brushingSessions"),
+                userRef.child("dailyProgress"),
+                userRef.child("deviceStatus"),
+                userRef.child("totalSessions")
+            )
+
+            // Delete all child references
+            for (ref in childRefs) {
+                try {
+                    ref.removeValue().await()
+                    Log.d(TAG, "Deleted reference: ${ref.key}")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error deleting ${ref.key}: ${e.message}")
+                }
+            }
+
+            // Finally delete the main user reference
+            userRef.removeValue().await()
+            Log.d(TAG, "Deleted main user reference")
+
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in deleteAllUserData: ${e.message}", e)
+            false
+        }
+    }
+
+    // ==================== DELETION RESULT SEALED CLASS ====================
+
+    sealed class DeletionResult {
+        data class Success(val message: String) : DeletionResult()
+        data class Error(val message: String) : DeletionResult()
+    }
+
+    // ==================== UTILITY METHODS ====================
+
     private fun getTodayDate(): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         return sdf.format(Date())
     }
 
-    // Get reference to current user's data
-    private fun getUserReference() = getCurrentUserId()?.let {
-        database.getReference("users").child(it)
-    }
-
     // ==================== SCHEDULES ====================
 
     suspend fun saveSchedule(schedule: Schedule): Boolean {
+        Log.d(TAG, "saveSchedule(): ${schedule.title}")
         return try {
             val userId = getCurrentUserId() ?: return false
             database.getReference("users")
@@ -47,9 +189,10 @@ class FirebaseManager {
                 .child(schedule.id.toString())
                 .setValue(schedule)
                 .await()
+            Log.d(TAG, "Schedule saved successfully")
             true
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error saving schedule: ${e.message}")
             false
         }
     }
@@ -57,10 +200,12 @@ class FirebaseManager {
     fun getSchedules(callback: (List<Schedule>) -> Unit) {
         val userId = getCurrentUserId()
         if (userId == null) {
+            Log.w(TAG, "getSchedules(): No user ID")
             callback(emptyList())
             return
         }
 
+        Log.d(TAG, "getSchedules() for user: $userId")
         database.getReference("users")
             .child(userId)
             .child("schedules")
@@ -69,7 +214,7 @@ class FirebaseManager {
                     val schedules = mutableListOf<Schedule>()
 
                     if (!snapshot.exists()) {
-                        println("DEBUG FirebaseManager: No schedules found for user $userId")
+                        Log.d(TAG, "No schedules found for user $userId")
                         callback(emptyList())
                         return
                     }
@@ -78,25 +223,26 @@ class FirebaseManager {
                         try {
                             child.getValue(Schedule::class.java)?.let {
                                 schedules.add(it)
-                                println("DEBUG FirebaseManager: Loaded schedule - ${it.title}: ${it.time}")
+                                Log.d(TAG, "Loaded schedule: ${it.title}")
                             }
                         } catch (e: Exception) {
-                            println("DEBUG FirebaseManager: Error parsing schedule: ${e.message}")
+                            Log.e(TAG, "Error parsing schedule: ${e.message}")
                         }
                     }
 
-                    println("DEBUG FirebaseManager: Total schedules loaded: ${schedules.size}")
+                    Log.d(TAG, "Total schedules loaded: ${schedules.size}")
                     callback(schedules)
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    println("DEBUG FirebaseManager: Error loading schedules - ${error.message}")
+                    Log.e(TAG, "Error loading schedules: ${error.message}")
                     callback(emptyList())
                 }
             })
     }
 
     suspend fun deleteSchedule(scheduleId: Int): Boolean {
+        Log.d(TAG, "deleteSchedule(): $scheduleId")
         return try {
             val userId = getCurrentUserId() ?: return false
             database.getReference("users")
@@ -105,9 +251,10 @@ class FirebaseManager {
                 .child(scheduleId.toString())
                 .removeValue()
                 .await()
+            Log.d(TAG, "Schedule deleted successfully")
             true
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error deleting schedule: ${e.message}")
             false
         }
     }
@@ -115,6 +262,7 @@ class FirebaseManager {
     // ==================== NOTIFICATIONS ====================
 
     suspend fun saveNotification(notification: Notification): Boolean {
+        Log.d(TAG, "saveNotification(): ${notification.title}")
         return try {
             val userId = getCurrentUserId() ?: return false
             database.getReference("users")
@@ -123,9 +271,10 @@ class FirebaseManager {
                 .child(notification.id.toString())
                 .setValue(notification)
                 .await()
+            Log.d(TAG, "Notification saved successfully")
             true
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error saving notification: ${e.message}")
             false
         }
     }
@@ -152,6 +301,7 @@ class FirebaseManager {
     }
 
     suspend fun deleteNotification(notificationId: Int): Boolean {
+        Log.d(TAG, "deleteNotification(): $notificationId")
         return try {
             val userId = getCurrentUserId() ?: return false
             database.getReference("users")
@@ -160,9 +310,10 @@ class FirebaseManager {
                 .child(notificationId.toString())
                 .removeValue()
                 .await()
+            Log.d(TAG, "Notification deleted successfully")
             true
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error deleting notification: ${e.message}")
             false
         }
     }
@@ -174,6 +325,7 @@ class FirebaseManager {
         duration: Int = 120, // in seconds
         score: Int = 85 // brushing quality score (0-100)
     ): Boolean {
+        Log.d(TAG, "saveBrushingSession(): $sessionType")
         return try {
             val userId = getCurrentUserId() ?: return false
             val date = getTodayDate()
@@ -207,9 +359,10 @@ class FirebaseManager {
             // Update total sessions count
             updateTotalSessions()
 
+            Log.d(TAG, "Brushing session saved successfully")
             true
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error saving brushing session: ${e.message}")
             false
         }
     }
@@ -259,7 +412,7 @@ class FirebaseManager {
             progressRef.setValue(currentProgress).await()
 
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error updating daily progress: ${e.message}")
         }
     }
 
@@ -318,7 +471,7 @@ class FirebaseManager {
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    println("DEBUG: Error loading progress - ${error.message}")
+                    Log.e(TAG, "Error loading progress: ${error.message}")
                     callback(null)
                 }
             })
@@ -334,7 +487,7 @@ class FirebaseManager {
 
             userRef.child("totalSessions").setValue(currentTotal + 1).await()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error updating total sessions: ${e.message}")
         }
     }
 
@@ -345,6 +498,7 @@ class FirebaseManager {
         batteryLevel: Int = 100,
         deviceName: String = "Smart Toothbrush"
     ): Boolean {
+        Log.d(TAG, "updateDeviceStatus(): isConnected=$isConnected")
         return try {
             val userId = getCurrentUserId() ?: return false
 
@@ -363,9 +517,10 @@ class FirebaseManager {
                 .setValue(deviceStatus)
                 .await()
 
+            Log.d(TAG, "Device status updated successfully")
             true
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error updating device status: ${e.message}")
             false
         }
     }
@@ -396,7 +551,7 @@ class FirebaseManager {
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    println("DEBUG: Error loading device status - ${error.message}")
+                    Log.e(TAG, "Error loading device status: ${error.message}")
                     callback(null)
                 }
             })
@@ -476,7 +631,7 @@ class FirebaseManager {
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    println("DEBUG: Error fetching total time - ${error.message}")
+                    Log.e(TAG, "Error fetching total time: ${error.message}")
                     callback(0)
                 }
             })
@@ -525,7 +680,7 @@ class FirebaseManager {
                                     weeklyData[dayOfWeek] = weeklyData.getOrDefault(dayOfWeek, 0) + duration
                                 }
                             } catch (e: Exception) {
-                                e.printStackTrace()
+                                Log.e(TAG, "Error parsing session date: ${e.message}")
                             }
                         }
                     }
@@ -534,7 +689,7 @@ class FirebaseManager {
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    println("DEBUG: Error fetching weekly data - ${error.message}")
+                    Log.e(TAG, "Error fetching weekly data: ${error.message}")
                     callback(emptyMap())
                 }
             })
@@ -581,7 +736,7 @@ class FirebaseManager {
                                     weeklyData[dayOfWeek] = weeklyData.getOrDefault(dayOfWeek, 0) + 1
                                 }
                             } catch (e: Exception) {
-                                e.printStackTrace()
+                                Log.e(TAG, "Error parsing session date: ${e.message}")
                             }
                         }
                     }
@@ -590,7 +745,7 @@ class FirebaseManager {
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    println("DEBUG: Error fetching weekly session counts - ${error.message}")
+                    Log.e(TAG, "Error fetching weekly session counts: ${error.message}")
                     callback(emptyMap())
                 }
             })

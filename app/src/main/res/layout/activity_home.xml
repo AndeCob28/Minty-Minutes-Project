@@ -331,15 +331,6 @@
                 android:contentDescription="Home" />
 
             <ImageButton
-                android:id="@+id/addBtn"
-                android:layout_width="0dp"
-                android:layout_height="48dp"
-                android:layout_weight="1"
-                android:background="@drawable/nav_button_selected"
-                android:src="@drawable/ic_add"
-                android:contentDescription="Add Session"/>
-
-            <ImageButton
                 android:id="@+id/calendarBtn"
                 android:layout_width="0dp"
                 android:layout_height="48dp"

@@ -23,7 +23,6 @@ class SettingsActivity : AppCompatActivity() {
     private fun initializeViews() {
         backButton = findViewById(R.id.backButton)
         dailyRemindersSwitch = findViewById(R.id.dailyRemindersSwitch)
-        exportDataButton = findViewById(R.id.exportDataButton)
         deleteAccountButton = findViewById(R.id.deleteAccountButton)
 
         // Removed views that no longer exist in the layout:
