@@ -73,36 +73,26 @@
                 android:padding="16dp"
                 android:clipToPadding="false" />
 
-
         </androidx.cardview.widget.CardView>
 
-        <!-- Bottom Navigation -->
+        <!-- Bottom Navigation (3 buttons only - NO ADD BUTTON) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="80dp"
             android:background="@drawable/bottom_navigation"
             android:gravity="center"
             android:orientation="horizontal"
-            android:paddingHorizontal="16dp">
+            android:paddingHorizontal="24dp">
 
             <ImageButton
                 android:id="@+id/homeBtn"
                 android:layout_width="0dp"
                 android:layout_height="48dp"
                 android:layout_weight="1"
+                android:layout_marginHorizontal="8dp"
                 android:background="@drawable/nav_button"
                 android:src="@drawable/ic_home"
                 android:contentDescription="Home"
-                app:tint="@android:color/white" />
-
-            <ImageButton
-                android:id="@+id/addBtn"
-                android:layout_width="0dp"
-                android:layout_height="48dp"
-                android:layout_weight="1"
-                android:background="@drawable/nav_button"
-                android:src="@drawable/ic_add"
-                android:contentDescription="Add"
                 app:tint="@android:color/white" />
 
             <ImageButton
@@ -110,6 +100,7 @@
                 android:layout_width="0dp"
                 android:layout_height="48dp"
                 android:layout_weight="1"
+                android:layout_marginHorizontal="8dp"
                 android:background="@drawable/nav_button"
                 android:src="@drawable/ic_schedule"
                 android:contentDescription="Schedule"
@@ -120,6 +111,7 @@
                 android:layout_width="0dp"
                 android:layout_height="48dp"
                 android:layout_weight="1"
+                android:layout_marginHorizontal="8dp"
                 android:background="@drawable/nav_button_selected"
                 android:src="@drawable/ic_notification"
                 android:contentDescription="Notifications"

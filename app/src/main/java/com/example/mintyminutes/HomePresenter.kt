@@ -15,18 +15,14 @@ class HomePresenter(
     private var currentProgress = 0
     private var isDeviceConnected = false
 
-    // Session tracking
     private var sessionInProgress = false
     private var sessionStartTime: Long = 0
-    private var sessionDuration: Int = 0
     private var sessionTimerJob: Job? = null
 
-    // ESP32 Manager
     private val esp32Manager = ESP32Manager(this)
-    private val MIN_SESSION_DURATION = 60 // 60 seconds = 1 minute
+    private val MIN_SESSION_DURATION = 60
 
     override fun onViewCreated() {
-        // Check if user is logged in
         val auth = FirebaseAuth.getInstance()
         if (auth.currentUser == null) {
             view.showToast("Please login again")
@@ -34,14 +30,10 @@ class HomePresenter(
             return
         }
 
-        // Load user data
         val userName = model.getUserName()
         view.updateWelcomeText("Hello, $userName!")
 
-        // Load progress and device status
         loadTodayProgress()
-        setupDeviceStatusListener()
-
         logEvent("App started")
     }
 
@@ -49,64 +41,31 @@ class HomePresenter(
         loadTodayProgress()
     }
 
-    override fun onPause() {
-        // Keep ESP32 connection active even when paused
-    }
+    override fun onPause() {}
 
     override fun onSessionAddClicked() {
-        if (currentProgress >= 3) {
-            view.showToast("You've completed all sessions today!")
-            return
-        }
-
-        view.showLoading(true)
-
-        presenterScope.launch {
-            try {
-                val sessionType = determineSessionType()
-
-                val success = withContext(Dispatchers.IO) {
-                    firebaseManager.saveBrushingSession(sessionType)
-                }
-
-                view.showLoading(false)
-
-                if (success) {
-                    currentProgress++
-                    updateProgressDisplay()
-
-                    val message = when (currentProgress) {
-                        1 -> "Morning session saved! 🌅"
-                        2 -> "Afternoon session saved! ☀️"
-                        3 -> "Evening session saved! 🌙 All done for today!"
-                        else -> "Session saved!"
-                    }
-                    view.showToast(message)
-                    logEvent("Manual session completed: $sessionType")
-                } else {
-                    view.showToast("Failed to save session")
-                }
-            } catch (e: Exception) {
-                view.showLoading(false)
-                view.showToast("Error: ${e.message}")
-                logEvent("Error saving session: ${e.message}")
-            }
-        }
+        // Manual session add removed - only automatic via ESP32
+        view.showToast("Please use your smart toothbrush to start a session")
     }
 
     override fun onDeviceStatusClicked() {
         if (!isDeviceConnected) {
-            // Show auto-discovery options
             view.showConnectionOptionsDialog()
         } else {
-            // Disconnect from ESP32
             disconnectFromESP32()
         }
     }
 
     override fun connectToESP32(ipAddress: String) {
-        logEvent("Attempting to connect to ESP32: $ipAddress")
-        esp32Manager.connect(ipAddress)
+        logEvent("Connecting to ESP32: $ipAddress")
+
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        if (userId == null) {
+            view.showToast("Error: No user ID found")
+            return
+        }
+
+        esp32Manager.connect(ipAddress, userId)
     }
 
     override fun disconnectFromESP32() {
@@ -161,22 +120,15 @@ class HomePresenter(
 
     fun isDeviceConnected(): Boolean = isDeviceConnected
 
-    // ==================== ESP32 Listener Methods ====================
+    // ========== ESP32 Listener Methods ==========
 
     override fun onConnected() {
         isDeviceConnected = true
         view.showDeviceStatus(true)
-        logEvent("ESP32 device connected successfully")
+        logEvent("✓ ESP32 device connected successfully")
         view.showToast("Device connected!")
 
-        // Update Firebase
-        presenterScope.launch {
-            withContext(Dispatchers.IO) {
-                firebaseManager.updateDeviceStatus(true)
-            }
-        }
-
-        // Refresh current progress
+        // Reload progress to sync with ESP32
         loadTodayProgress()
     }
 
@@ -185,197 +137,93 @@ class HomePresenter(
         view.showDeviceStatus(false)
         logEvent("ESP32 device disconnected")
 
-        // If session was in progress, end it
         if (sessionInProgress) {
-            endBrushingSession(false)
-        }
-
-        // Update Firebase
-        presenterScope.launch {
-            withContext(Dispatchers.IO) {
-                firebaseManager.updateDeviceStatus(false)
-            }
+            endSession(false)
         }
     }
 
     override fun onToothbrushRemoved() {
-        logEvent("🟢 Toothbrush removed from holder")
-        startBrushingSession()
+        logEvent("🟢 Toothbrush removed - Session started")
+        startSession()
     }
 
     override fun onToothbrushReturned() {
-        logEvent("🔴 Toothbrush returned to holder")
-        endBrushingSession(true)
+        logEvent("🔴 Toothbrush returned")
+        endSession(false) // Timer will be stopped, validation happens on ESP32
     }
 
-    override fun onBatteryUpdate(level: Int) {
-        // Battery updates removed - no longer tracked
-        logEvent("Battery update received: $level%")
+    override fun onSessionComplete(duration: Int, valid: Boolean) {
+        if (valid) {
+            logEvent("✅ Session completed: ${duration}s (VALID)")
+            view.showToast("Great job! Session saved")
+
+            // Reload progress from Firebase (ESP32 already saved it)
+            loadTodayProgress()
+        } else {
+            logEvent("❌ Session too short: ${duration}s (< 60s required)")
+            view.showToast("Session too short! Brush for at least 60 seconds")
+        }
     }
 
     override fun onError(error: String) {
-        logEvent("❌ ESP32 Error: $error")
-        view.showToast("Device error: $error")
+        logEvent("❌ Error: $error")
+        view.showToast("Error: $error")
     }
 
-    override fun onProgressUpdate(current: Int, total: Int) {
-        currentProgress = current
-        view.showProgress(current, total)
-        logEvent("Progress updated: $current/$total sessions")
-    }
+    // ========== Session Management ==========
 
-    override fun onSessionDotsUpdate(morning: Boolean, afternoon: Boolean, evening: Boolean) {
-        view.updateSessionDots(morning, afternoon, evening)
-        logEvent("Session dots updated: AM=$morning NN=$afternoon PM=$evening")
-    }
-
-    override fun onEventLog(event: String) {
-        logEvent(event)
-    }
-
-    // ==================== Session Management ====================
-
-    private fun startBrushingSession() {
-        if (sessionInProgress) {
-            logEvent("Session already in progress, ignoring")
-            return
-        }
-
-        if (currentProgress >= 3) {
-            view.showToast("All sessions completed for today!")
-            logEvent("Cannot start session: Daily limit reached")
-            return
-        }
+    private fun startSession() {
+        if (sessionInProgress) return
 
         sessionInProgress = true
         sessionStartTime = System.currentTimeMillis()
-        sessionDuration = 0
 
         view.showSessionInProgress(true, 0)
-        logEvent("Brushing session started")
 
-        // Start timer
         sessionTimerJob = presenterScope.launch {
             while (sessionInProgress) {
-                delay(1000) // Update every second
-                sessionDuration = ((System.currentTimeMillis() - sessionStartTime) / 1000).toInt()
-                view.showSessionInProgress(true, sessionDuration)
+                delay(1000)
+                val duration = ((System.currentTimeMillis() - sessionStartTime) / 1000).toInt()
+                view.showSessionInProgress(true, duration)
             }
         }
     }
 
-    private fun endBrushingSession(validate: Boolean) {
-        if (!sessionInProgress) {
-            return
-        }
+    private fun endSession(cancelled: Boolean) {
+        if (!sessionInProgress) return
 
         sessionInProgress = false
         sessionTimerJob?.cancel()
-
-        val duration = ((System.currentTimeMillis() - sessionStartTime) / 1000).toInt()
         view.showSessionInProgress(false, 0)
 
-        if (!validate) {
-            logEvent("Session ended without validation")
-            return
-        }
-
-        // Validate session duration
-        if (duration >= MIN_SESSION_DURATION) {
-            // Valid session - save it
-            logEvent("Session completed: ${duration}s (VALID)")
-            saveAutomaticSession(duration)
-        } else {
-            // Too short
-            val message = "Session too short! (${duration}s / ${MIN_SESSION_DURATION}s required)"
-            view.showToast(message)
-            logEvent(message)
+        if (cancelled) {
+            logEvent("Session cancelled")
         }
     }
 
-    private fun saveAutomaticSession(duration: Int) {
-        presenterScope.launch {
-            try {
-                val sessionType = determineSessionType()
-
-                val success = withContext(Dispatchers.IO) {
-                    firebaseManager.saveBrushingSession(sessionType)
-                }
-
-                if (success) {
-                    currentProgress++
-                    updateProgressDisplay()
-
-                    if (currentProgress >= 3) {
-                        view.showToast("🎉 All 3 sessions completed today! Great job!")
-                        logEvent("Daily goal achieved! 3/3 sessions completed")
-                    } else {
-                        val remaining = 3 - currentProgress
-                        view.showToast("✅ Session saved! $remaining more to go today")
-                        logEvent("Session auto-saved: $sessionType ($duration seconds)")
-                    }
-                } else {
-                    view.showToast("Failed to save session")
-                    logEvent("Error: Failed to save automatic session")
-                }
-            } catch (e: Exception) {
-                view.showToast("Error saving session: ${e.message}")
-                logEvent("Error: ${e.message}")
-            }
-        }
-    }
-
-    private fun determineSessionType(): String {
-        return when (currentProgress) {
-            0 -> SessionType.MORNING.value
-            1 -> SessionType.AFTERNOON.value
-            2 -> SessionType.EVENING.value
-            else -> "general"
-        }
-    }
-
-    // ==================== Data Loading ====================
+    // ========== Data Loading ==========
 
     private fun loadTodayProgress() {
         firebaseManager.getTodayProgress { progress ->
             progress?.let {
-                val completedSessions = it["completedSessions"] as? Int ?: 0
-                currentProgress = completedSessions
+                val completed = it["completedSessions"] as? Int ?: 0
+                currentProgress = completed
 
-                updateProgressDisplay()
-
+                view.showProgress(completed, 3)
                 view.updateSessionDots(
                     morning = it["morningCompleted"] as? Boolean ?: false,
                     afternoon = it["afternoonCompleted"] as? Boolean ?: false,
                     evening = it["eveningCompleted"] as? Boolean ?: false
                 )
 
-                logEvent("Progress loaded: $completedSessions/3 sessions")
+                logEvent("Progress loaded: $completed/3 sessions")
             } ?: run {
                 currentProgress = 0
-                updateProgressDisplay()
+                view.showProgress(0, 3)
                 view.updateSessionDots(false, false, false)
-                logEvent("No progress data found for today")
+                logEvent("No progress data for today")
             }
         }
-    }
-
-    private fun setupDeviceStatusListener() {
-        firebaseManager.listenToDeviceStatus { status ->
-            status?.let {
-                val fbConnected = it["isConnected"] as? Boolean ?: false
-
-                // Only update if not already connected via ESP32
-                if (!isDeviceConnected && fbConnected) {
-                    // Device connected from Firebase
-                }
-            }
-        }
-    }
-
-    private fun updateProgressDisplay() {
-        view.showProgress(currentProgress, 3)
-        view.updateReminderText(currentProgress)
     }
 
     private fun logEvent(event: String) {

@@ -25,8 +25,9 @@ class ScheduleActivity : AppCompatActivity() {
     private lateinit var menuIcon: ImageView
     private lateinit var addReminderBtn: Button
     private lateinit var scheduleRecyclerView: RecyclerView
+
+    // Bottom navigation - REMOVED addBtn
     private lateinit var homeBtn: ImageButton
-    private lateinit var addBtn: ImageButton
     private lateinit var scheduleBtn: ImageButton
     private lateinit var notificationBtn: ImageButton
 
@@ -42,7 +43,6 @@ class ScheduleActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        println("DEBUG ScheduleActivity: onCreate called")
         setContentView(R.layout.activity_schedule)
 
         // Initialize notification helper
@@ -51,17 +51,12 @@ class ScheduleActivity : AppCompatActivity() {
         // Request notification permission for Android 13+
         requestNotificationPermission()
 
-        println("DEBUG ScheduleActivity: About to initialize views")
         initializeViews()
-        println("DEBUG ScheduleActivity: About to setup RecyclerView")
         setupRecyclerView()
-        println("DEBUG ScheduleActivity: About to setup click listeners")
         setupClickListeners()
-        println("DEBUG ScheduleActivity: About to setup sidebar")
         setupSidebarMenu()
-        println("DEBUG ScheduleActivity: About to load schedules from Firebase")
+        updateBottomNavSelection(scheduleBtn)
         loadSchedulesFromFirebase()
-        println("DEBUG ScheduleActivity: onCreate finished")
     }
 
     private fun requestNotificationPermission() {
@@ -81,8 +76,9 @@ class ScheduleActivity : AppCompatActivity() {
         menuIcon = findViewById(R.id.menuIcon)
         addReminderBtn = findViewById(R.id.addReminderBtn)
         scheduleRecyclerView = findViewById(R.id.scheduleRecyclerView)
+
+        // Bottom navigation - REMOVED addBtn initialization
         homeBtn = findViewById(R.id.homeBtn)
-        addBtn = findViewById(R.id.addBtn)
         scheduleBtn = findViewById(R.id.scheduleBtn)
         notificationBtn = findViewById(R.id.notificationBtn)
     }
@@ -104,18 +100,10 @@ class ScheduleActivity : AppCompatActivity() {
             return
         }
 
-        println("DEBUG: Loading schedules for user: $userId")
-
-        // Clear existing list first
         scheduleList.clear()
         scheduleAdapter.notifyDataSetChanged()
 
         firebaseManager.getSchedules { schedules ->
-            println("DEBUG: Loaded ${schedules.size} schedules from Firebase")
-            schedules.forEach { schedule ->
-                println("DEBUG: Schedule - ID: ${schedule.id}, Title: ${schedule.title}, Time: ${schedule.time}")
-            }
-
             scheduleList.clear()
             scheduleList.addAll(schedules)
             scheduleAdapter.notifyDataSetChanged()
@@ -139,38 +127,41 @@ class ScheduleActivity : AppCompatActivity() {
         }
 
         homeBtn.setOnClickListener {
+            updateBottomNavSelection(homeBtn)
             val intent = Intent(this, HomeActivity::class.java)
             startActivity(intent)
-        }
-
-        addBtn.setOnClickListener {
-            Toast.makeText(this, "Add new session", Toast.LENGTH_SHORT).show()
+            finish()
         }
 
         scheduleBtn.setOnClickListener {
+            // Already on schedule screen
             Toast.makeText(this, "Already in Schedule", Toast.LENGTH_SHORT).show()
         }
 
         notificationBtn.setOnClickListener {
+            updateBottomNavSelection(notificationBtn)
             val intent = Intent(this, NotificationActivity::class.java)
             startActivity(intent)
+            finish()
         }
+    }
 
-        // Clear All Button (for debugging - remove in production)
-        try {
-            findViewById<Button>(R.id.clearAllBtn)?.setOnClickListener {
-                val userId = firebaseManager.getCurrentUserId()
-                if (userId != null) {
-                    val database = com.google.firebase.database.FirebaseDatabase.getInstance(
-                        "https://minty-minutes-cloud-default-rtdb.asia-southeast1.firebasedatabase.app/"
-                    )
-                    database.getReference("users").child(userId).child("schedules").removeValue()
-                    Toast.makeText(this, "All schedules cleared!", Toast.LENGTH_SHORT).show()
-                }
+    private fun updateBottomNavSelection(selectedButton: ImageButton) {
+        // UPDATED: Only 3 buttons now (removed addBtn)
+        val buttons = listOf(homeBtn, scheduleBtn, notificationBtn)
+
+        buttons.forEach { button ->
+            val isSelected = button == selectedButton
+            val backgroundRes = if (isSelected) {
+                R.drawable.nav_button_selected
+            } else {
+                R.drawable.nav_button
             }
-        } catch (e: Exception) {
-            // Clear button not found in layout, skip it
-            println("DEBUG: Clear button not found - this is optional")
+
+            button.setBackgroundResource(backgroundRes)
+
+            val tintColor = ContextCompat.getColor(this, android.R.color.white)
+            button.imageTintList = android.content.res.ColorStateList.valueOf(tintColor)
         }
     }
 
@@ -278,7 +269,6 @@ class ScheduleActivity : AppCompatActivity() {
         val timeDisplay = dialogView.findViewById<TextView>(R.id.timeDisplay)
         val confirmBtn = dialogView.findViewById<Button>(R.id.confirmBtn)
 
-        // Pre-select the current period and time
         var selectedPeriod = ""
         var selectedTime = ""
 
@@ -302,14 +292,13 @@ class ScheduleActivity : AppCompatActivity() {
             }
         }
 
-        // Extract time if it exists (format: "Morning Brush - 8:00 AM - 9:00 AM")
+        // Extract time
         val timeParts = scheduleTime.split(" - ")
         if (timeParts.size >= 2) {
             selectedTime = timeParts.drop(1).joinToString(" - ")
             timeDisplay.text = selectedTime
         }
 
-        // Change button text to "Update"
         confirmBtn.text = "Update"
 
         val dialog = AlertDialog.Builder(this)
@@ -368,13 +357,20 @@ class ScheduleActivity : AppCompatActivity() {
             } else if (selectedTime.isEmpty()) {
                 Toast.makeText(this, "Please set time", Toast.LENGTH_SHORT).show()
             } else {
-                // Update the schedule with same ID
                 val updatedSchedule = Schedule(schedule.id, "MintyMinutes", "$selectedPeriod - $selectedTime")
 
-                // Save to Firebase (same ID will overwrite)
                 CoroutineScope(Dispatchers.Main).launch {
                     val success = firebaseManager.saveSchedule(updatedSchedule)
                     if (success) {
+                        // Reschedule notification
+                        notificationHelper.cancelNotification(schedule.id)
+                        notificationHelper.scheduleNotification(
+                            scheduleId = updatedSchedule.id,
+                            title = "MintyMinutes Reminder",
+                            message = "Time to brush your teeth! ($selectedPeriod)",
+                            time = selectedTime
+                        )
+
                         dialog.dismiss()
                         showSuccessDialog("Reminder Updated!")
                     } else {
@@ -457,17 +453,32 @@ class ScheduleActivity : AppCompatActivity() {
                 R.id.nav_home -> {
                     val intent = Intent(this, HomeActivity::class.java)
                     startActivity(intent)
+                    finish()
                     drawerLayout.closeDrawer(GravityCompat.START)
                     true
                 }
+                R.id.nav_history -> {
+                    try {
+                        val intent = Intent(this, HistoryActivity::class.java)
+                        startActivity(intent)
+                        finish()
+                        drawerLayout.closeDrawer(GravityCompat.START)
+                    } catch (e: Exception) {
+                        Toast.makeText(this, "Error opening history", Toast.LENGTH_SHORT).show()
+                    }
+                    true
+                }
                 R.id.nav_settings -> {
-                    Toast.makeText(this, "Settings", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(this, SettingsActivity::class.java)
+                    startActivity(intent)
+                    finish()
                     drawerLayout.closeDrawer(GravityCompat.START)
                     true
                 }
                 R.id.nav_profile -> {
                     val intent = Intent(this, ProfileActivity::class.java)
                     startActivity(intent)
+                    finish()
                     drawerLayout.closeDrawer(GravityCompat.START)
                     true
                 }
@@ -487,7 +498,6 @@ class ScheduleActivity : AppCompatActivity() {
         }
     }
 
-    @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
             drawerLayout.closeDrawer(GravityCompat.START)
