@@ -106,7 +106,7 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <!-- Progress Card -->
+                <!-- Compressed Progress Card -->
                 <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -118,31 +118,23 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="24dp">
+                        android:orientation="horizontal"
+                        android:padding="20dp"
+                        android:gravity="center_vertical">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginBottom="24dp"
-                            android:text="Today's Progress"
-                            android:textColor="@color/text_primary"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
-
-                        <!-- Circular Progress Container -->
+                        <!-- Left side: Progress Circle (Smaller) -->
                         <RelativeLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="180dp"
-                            android:layout_marginBottom="16dp"
-                            android:gravity="center">
+                            android:layout_width="100dp"
+                            android:layout_height="100dp"
+                            android:layout_marginEnd="20dp">
 
                             <!-- Progress Arc/Circle -->
                             <ImageView
                                 android:id="@+id/progressCircle"
-                                android:layout_width="150dp"
-                                android:layout_height="150dp"
-                                android:layout_centerInParent="true" />
+                                android:layout_width="100dp"
+                                android:layout_height="100dp"
+                                android:layout_centerInParent="true"
+                                android:src="@drawable/circle_progress_0" />
 
                             <!-- Progress Text in Center -->
                             <LinearLayout
@@ -158,100 +150,174 @@
                                     android:layout_height="wrap_content"
                                     android:text="0/3"
                                     android:textColor="@color/text_primary"
-                                    android:textSize="28sp"
+                                    android:textSize="20sp"
                                     android:textStyle="bold" />
-
-                                <TextView
-                                    android:id="@+id/progressLabelText"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="sessions"
-                                    android:textColor="@color/text_secondary"
-                                    android:textSize="14sp"
-                                    android:layout_marginTop="4dp" />
 
                             </LinearLayout>
 
                         </RelativeLayout>
 
-                        <!-- Session Indicators -->
+                        <!-- Right side: Progress Info -->
                         <LinearLayout
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center"
-                            android:layout_marginBottom="16dp">
+                            android:layout_weight="1"
+                            android:orientation="vertical">
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Morning"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="12sp"
-                                android:layout_marginRight="24dp" />
+                                android:text="Today's Progress"
+                                android:textColor="@color/text_primary"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:layout_marginBottom="12dp" />
 
-                            <TextView
-                                android:layout_width="wrap_content"
+                            <!-- Session Status Row -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="Afternoon"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="12sp"
-                                android:layout_marginRight="24dp" />
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical">
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Evening"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="12sp" />
+                                <!-- Morning -->
+                                <LinearLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="vertical"
+                                    android:gravity="center"
+                                    android:layout_marginEnd="16dp">
+
+                                    <ImageView
+                                        android:id="@+id/morningDot"
+                                        android:layout_width="12dp"
+                                        android:layout_height="12dp"
+                                        android:layout_marginBottom="4dp"
+                                        android:src="@drawable/circle_empty" />
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="AM"
+                                        android:textColor="@color/text_secondary"
+                                        android:textSize="10sp" />
+                                </LinearLayout>
+
+                                <!-- Afternoon -->
+                                <LinearLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="vertical"
+                                    android:gravity="center"
+                                    android:layout_marginEnd="16dp">
+
+                                    <ImageView
+                                        android:id="@+id/afternoonDot"
+                                        android:layout_width="12dp"
+                                        android:layout_height="12dp"
+                                        android:layout_marginBottom="4dp"
+                                        android:src="@drawable/circle_empty" />
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="NN"
+                                        android:textColor="@color/text_secondary"
+                                        android:textSize="10sp" />
+                                </LinearLayout>
+
+                                <!-- Evening -->
+                                <LinearLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="vertical"
+                                    android:gravity="center">
+
+                                    <ImageView
+                                        android:id="@+id/eveningDot"
+                                        android:layout_width="12dp"
+                                        android:layout_height="12dp"
+                                        android:layout_marginBottom="4dp"
+                                        android:src="@drawable/circle_empty" />
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="PM"
+                                        android:textColor="@color/text_secondary"
+                                        android:textSize="10sp" />
+                                </LinearLayout>
+
+                            </LinearLayout>
 
                         </LinearLayout>
-
-                        <!-- Session Dots -->
-                        <LinearLayout
-                            android:id="@+id/sessionDotsContainer"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center"
-                            android:layout_marginBottom="16dp">
-
-                            <!-- Morning Dot -->
-                            <ImageView
-                                android:id="@+id/morningDot"
-                                android:layout_width="16dp"
-                                android:layout_height="16dp"
-                                android:layout_marginRight="32dp" />
-
-                            <!-- Afternoon Dot -->
-                            <ImageView
-                                android:id="@+id/afternoonDot"
-                                android:layout_width="16dp"
-                                android:layout_height="16dp"
-                                android:layout_marginRight="32dp" />
-
-                            <!-- Evening Dot -->
-                            <ImageView
-                                android:id="@+id/eveningDot"
-                                android:layout_width="16dp"
-                                android:layout_height="16dp" />
-
-                        </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/reminderText"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center"
-                            android:text="Remember to brush 3 times everyday."
-                            android:textColor="@color/text_secondary"
-                            android:textSize="14sp" />
 
                     </LinearLayout>
 
                 </androidx.cardview.widget.CardView>
 
-                <!-- Device Status Card -->
+                <!-- Device Status Card with Click Action -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardBackgroundColor="@color/card_background"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="2dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="12dp"
+                            android:text="Device Status"
+                            android:textColor="@color/text_primary"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <!-- Device Status Indicator - Clickable -->
+                        <LinearLayout
+                            android:id="@+id/deviceStatusCard"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/rounded_rectangle"
+                            android:backgroundTint="@color/red_400"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:padding="16dp"
+                            android:clickable="true"
+                            android:focusable="true">
+
+                            <TextView
+                                android:id="@+id/deviceStatusText"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Tap to Connect ESP32"
+                                android:textColor="@android:color/white"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <ImageView
+                                android:id="@+id/wifiIcon"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/ic_wifi_off"
+                                android:contentDescription="WiFi Status"
+                                app:tint="@android:color/white" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+                <!-- Events Log Card -->
                 <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -261,48 +327,101 @@
                     app:cardElevation="2dp">
 
                     <LinearLayout
-                        android:layout_width="375dp"
-                        android:layout_height="match_parent"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="24dp">
+                        android:padding="20dp">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginBottom="16dp"
-                            android:text="Device Status"
-                            android:textColor="@color/text_primary"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
-
-                        <!-- Device Status Indicator -->
                         <LinearLayout
-                            android:id="@+id/deviceStatusCard"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:background="@drawable/rounded_rectangle"
-                            android:backgroundTint="@color/red_400"
-                            android:gravity="center_vertical"
                             android:orientation="horizontal"
-                            android:padding="16dp">
+                            android:gravity="center_vertical"
+                            android:layout_marginBottom="12dp">
 
                             <TextView
-                                android:id="@+id/deviceStatusText"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:text="Device Disconnected"
+                                android:text="Events Log"
                                 android:textColor="@color/text_primary"
                                 android:textSize="16sp"
                                 android:textStyle="bold" />
 
-                            <ImageView
-                                android:id="@+id/wifiIcon"
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:contentDescription="WiFi Status" />
+                            <!-- Live Indicator (shows when ESP32 connected) -->
+                            <LinearLayout
+                                android:id="@+id/liveIndicator"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical"
+                                android:visibility="gone"
+                                android:background="@drawable/rounded_rectangle"
+                                android:backgroundTint="@color/green_400"
+                                android:paddingHorizontal="8dp"
+                                android:paddingVertical="4dp">
+
+                                <View
+                                    android:layout_width="6dp"
+                                    android:layout_height="6dp"
+                                    android:background="@drawable/circle_filled"
+                                    android:backgroundTint="@android:color/white"
+                                    android:layout_marginEnd="4dp" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="LIVE"
+                                    android:textColor="@android:color/white"
+                                    android:textSize="10sp"
+                                    android:textStyle="bold" />
+
+                            </LinearLayout>
 
                         </LinearLayout>
+
+                        <!-- Events Log Container with ScrollView for dynamic content -->
+                        <androidx.core.widget.NestedScrollView
+                            android:layout_width="match_parent"
+                            android:layout_height="200dp"
+                            android:background="@drawable/rounded_rectangle"
+                            android:backgroundTint="@android:color/white"
+                            android:padding="12dp"
+                            android:scrollbars="vertical">
+
+                            <LinearLayout
+                                android:id="@+id/eventsLogContainer"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+
+                                <!-- Events will be dynamically added here from IoT data -->
+                                <TextView
+                                    android:id="@+id/eventsLogText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="Waiting for device events..."
+                                    android:textColor="@color/text_secondary"
+                                    android:textSize="13sp"
+                                    android:lineSpacingExtra="4dp"
+                                    android:fontFamily="monospace" />
+
+                            </LinearLayout>
+
+                        </androidx.core.widget.NestedScrollView>
+
+                        <!-- Clear Log Button -->
+                        <Button
+                            android:id="@+id/clearLogBtn"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:layout_gravity="end"
+                            android:layout_marginTop="8dp"
+                            android:text="Clear Log"
+                            android:textSize="12sp"
+                            android:backgroundTint="@color/blue_500"
+                            android:textColor="@android:color/white"
+                            style="@style/Widget.Material3.Button" />
 
                     </LinearLayout>
 
@@ -319,43 +438,40 @@
             android:background="@drawable/bottom_navigation"
             android:gravity="center"
             android:orientation="horizontal"
-            android:paddingHorizontal="16dp">
+            android:paddingHorizontal="24dp">
 
             <ImageButton
                 android:id="@+id/homeBtn"
                 android:layout_width="0dp"
                 android:layout_height="48dp"
                 android:layout_weight="1"
+                android:layout_marginHorizontal="8dp"
                 android:background="@drawable/nav_button_selected"
                 android:src="@drawable/ic_home"
-                android:contentDescription="Home" />
-
-            <ImageButton
-                android:id="@+id/addBtn"
-                android:layout_width="0dp"
-                android:layout_height="48dp"
-                android:layout_weight="1"
-                android:background="@drawable/nav_button_selected"
-                android:src="@drawable/ic_add"
-                android:contentDescription="Add Session"/>
+                android:contentDescription="Home"
+                app:tint="@android:color/white" />
 
             <ImageButton
                 android:id="@+id/calendarBtn"
                 android:layout_width="0dp"
                 android:layout_height="48dp"
                 android:layout_weight="1"
-                android:background="@drawable/nav_button_selected"
+                android:layout_marginHorizontal="8dp"
+                android:background="@drawable/nav_button"
                 android:src="@drawable/ic_schedule"
-                android:contentDescription="Schedule"/>
+                android:contentDescription="Schedule"
+                app:tint="@android:color/white" />
 
             <ImageButton
                 android:id="@+id/notificationBtn"
                 android:layout_width="0dp"
                 android:layout_height="48dp"
                 android:layout_weight="1"
-                android:background="@drawable/nav_button_selected"
+                android:layout_marginHorizontal="8dp"
+                android:background="@drawable/nav_button"
                 android:src="@drawable/ic_notification"
-                android:contentDescription="Notifications"/>
+                android:contentDescription="Notifications"
+                app:tint="@android:color/white" />
 
         </LinearLayout>
 

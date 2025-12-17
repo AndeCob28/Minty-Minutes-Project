@@ -64,7 +64,7 @@
                 android:background="@drawable/input_background"
                 android:padding="16dp"
                 android:textSize="16sp"
-                android:textColorHint="#94A3B8" />
+                android:textColor="@color/black" />
 
             <TextView
                 android:id="@+id/nameError"
@@ -87,7 +87,7 @@
                 android:background="@drawable/input_background"
                 android:padding="16dp"
                 android:textSize="16sp"
-                android:textColorHint="#94A3B8"
+                android:textColor="@color/black"
                 android:layout_marginTop="16dp" />
 
             <TextView
@@ -111,7 +111,7 @@
                 android:background="@drawable/input_background"
                 android:padding="16dp"
                 android:textSize="16sp"
-                android:textColorHint="#94A3B8"
+                android:textColor="@color/black"
                 android:layout_marginTop="16dp" />
 
             <TextView
@@ -135,7 +135,7 @@
                 android:background="@drawable/input_background"
                 android:padding="16dp"
                 android:textSize="16sp"
-                android:textColorHint="#94A3B8"
+                android:textColor="@color/black"
                 android:layout_marginTop="16dp" />
 
             <TextView
