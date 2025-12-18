@@ -1,5 +1,6 @@
 package com.example.mintyminutes
 
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.*
 import java.text.SimpleDateFormat
@@ -20,64 +21,93 @@ class HomePresenter(
     private var sessionTimerJob: Job? = null
 
     private val esp32Manager = ESP32Manager(this)
-    private val MIN_SESSION_DURATION = 60
 
     override fun onViewCreated() {
-        val auth = FirebaseAuth.getInstance()
-        if (auth.currentUser == null) {
-            view.showToast("Please login again")
-            view.navigateToLogin()
-            return
+        try {
+            val auth = FirebaseAuth.getInstance()
+            if (auth.currentUser == null) {
+                view.showToast("Please login again")
+                view.navigateToLogin()
+                return
+            }
+
+            val userName = model.getUserName()
+            view.updateWelcomeText("Hello, $userName!")
+
+            loadTodayProgress()
+            logEvent("App started")
+        } catch (e: Exception) {
+            Log.e("HomePresenter", "onViewCreated error: ${e.message}", e)
+            view.showToast("Initialization error: ${e.message}")
         }
-
-        val userName = model.getUserName()
-        view.updateWelcomeText("Hello, $userName!")
-
-        loadTodayProgress()
-        logEvent("App started")
     }
 
     override fun onResume() {
-        loadTodayProgress()
+        try {
+            loadTodayProgress()
+        } catch (e: Exception) {
+            Log.e("HomePresenter", "onResume error: ${e.message}", e)
+        }
     }
 
     override fun onPause() {}
 
     override fun onSessionAddClicked() {
-        // Manual session add removed - only automatic via ESP32
         view.showToast("Please use your smart toothbrush to start a session")
     }
 
     override fun onDeviceStatusClicked() {
-        if (!isDeviceConnected) {
-            view.showConnectionOptionsDialog()
-        } else {
-            disconnectFromESP32()
+        try {
+            if (!isDeviceConnected) {
+                view.showConnectionOptionsDialog()
+            } else {
+                disconnectFromESP32()
+            }
+        } catch (e: Exception) {
+            Log.e("HomePresenter", "onDeviceStatusClicked error: ${e.message}", e)
+            view.showToast("Error: ${e.message}")
         }
     }
 
     override fun connectToESP32(ipAddress: String) {
-        logEvent("Connecting to ESP32: $ipAddress")
+        try {
+            logEvent("Connecting to ESP32: $ipAddress")
 
-        val userId = FirebaseAuth.getInstance().currentUser?.uid
-        if (userId == null) {
-            view.showToast("Error: No user ID found")
-            return
+            val userId = FirebaseAuth.getInstance().currentUser?.uid
+            if (userId == null) {
+                view.showToast("Error: No user ID found")
+                logEvent("Connection failed: No user ID")
+                return
+            }
+
+            Log.d("HomePresenter", "Attempting connection to $ipAddress")
+            // ESP32Manager now gets userId automatically, no need to pass it
+            esp32Manager.connect(ipAddress)
+        } catch (e: Exception) {
+            Log.e("HomePresenter", "connectToESP32 error: ${e.message}", e)
+            view.showToast("Connection error: ${e.message}")
+            logEvent("Connection error: ${e.message}")
         }
-
-        esp32Manager.connect(ipAddress, userId)
     }
 
     override fun disconnectFromESP32() {
-        esp32Manager.disconnect()
-        isDeviceConnected = false
-        view.showDeviceStatus(false)
-        logEvent("Disconnected from ESP32")
+        try {
+            esp32Manager.disconnect()
+            isDeviceConnected = false
+            view.showDeviceStatus(false)
+            logEvent("Disconnected from ESP32")
+        } catch (e: Exception) {
+            Log.e("HomePresenter", "disconnectFromESP32 error: ${e.message}", e)
+        }
     }
 
     override fun onClearLogClicked() {
-        view.clearEventLog()
-        logEvent("Event log cleared")
+        try {
+            view.clearEventLog()
+            logEvent("Event log cleared")
+        } catch (e: Exception) {
+            Log.e("HomePresenter", "onClearLogClicked error: ${e.message}", e)
+        }
     }
 
     override fun onMenuItemSelected(itemId: Int) {
@@ -105,17 +135,25 @@ class HomePresenter(
     }
 
     override fun onLogoutClicked() {
-        disconnectFromESP32()
-        model.clearSession()
-        FirebaseAuth.getInstance().signOut()
-        view.showToast("Logged out successfully")
-        view.navigateToLogin()
+        try {
+            disconnectFromESP32()
+            model.clearSession()
+            FirebaseAuth.getInstance().signOut()
+            view.showToast("Logged out successfully")
+            view.navigateToLogin()
+        } catch (e: Exception) {
+            Log.e("HomePresenter", "onLogoutClicked error: ${e.message}", e)
+        }
     }
 
     override fun onDestroy() {
-        sessionTimerJob?.cancel()
-        esp32Manager.disconnect()
-        presenterScope.cancel()
+        try {
+            sessionTimerJob?.cancel()
+            esp32Manager.disconnect()
+            presenterScope.cancel()
+        } catch (e: Exception) {
+            Log.e("HomePresenter", "onDestroy error: ${e.message}", e)
+        }
     }
 
     fun isDeviceConnected(): Boolean = isDeviceConnected
@@ -123,51 +161,116 @@ class HomePresenter(
     // ========== ESP32 Listener Methods ==========
 
     override fun onConnected() {
-        isDeviceConnected = true
-        view.showDeviceStatus(true)
-        logEvent("✓ ESP32 device connected successfully")
-        view.showToast("Device connected!")
+        presenterScope.launch(Dispatchers.Main) {
+            try {
+                isDeviceConnected = true
+                view.showDeviceStatus(true)
+                logEvent("✓ ESP32 device connected successfully")
+                view.showToast("Device connected!")
 
-        // Reload progress to sync with ESP32
-        loadTodayProgress()
+                // ESP32 will send current progress automatically
+            } catch (e: Exception) {
+                Log.e("HomePresenter", "onConnected error: ${e.message}", e)
+            }
+        }
     }
 
     override fun onDisconnected() {
-        isDeviceConnected = false
-        view.showDeviceStatus(false)
-        logEvent("ESP32 device disconnected")
+        presenterScope.launch(Dispatchers.Main) {
+            try {
+                isDeviceConnected = false
+                view.showDeviceStatus(false)
+                logEvent("ESP32 device disconnected")
 
-        if (sessionInProgress) {
-            endSession(false)
+                if (sessionInProgress) {
+                    endSession(true)
+                }
+            } catch (e: Exception) {
+                Log.e("HomePresenter", "onDisconnected error: ${e.message}", e)
+            }
         }
     }
 
     override fun onToothbrushRemoved() {
-        logEvent("🟢 Toothbrush removed - Session started")
-        startSession()
+        presenterScope.launch(Dispatchers.Main) {
+            try {
+                logEvent("🟢 Toothbrush removed - Session started")
+                startSession()
+            } catch (e: Exception) {
+                Log.e("HomePresenter", "onToothbrushRemoved error: ${e.message}", e)
+            }
+        }
     }
 
     override fun onToothbrushReturned() {
-        logEvent("🔴 Toothbrush returned")
-        endSession(false) // Timer will be stopped, validation happens on ESP32
+        presenterScope.launch(Dispatchers.Main) {
+            try {
+                logEvent("🔴 Toothbrush returned to holder")
+                endSession(false)
+            } catch (e: Exception) {
+                Log.e("HomePresenter", "onToothbrushReturned error: ${e.message}", e)
+            }
+        }
     }
 
     override fun onSessionComplete(duration: Int, valid: Boolean) {
-        if (valid) {
-            logEvent("✅ Session completed: ${duration}s (VALID)")
-            view.showToast("Great job! Session saved")
+        presenterScope.launch(Dispatchers.Main) {
+            try {
+                if (valid) {
+                    logEvent("✅ Session completed: ${duration}s (VALID)")
+                    view.showToast("Great job! Session saved")
+                } else {
+                    logEvent("❌ Session too short: ${duration}s (< 60s required)")
+                    view.showToast("Session too short! Brush for at least 60 seconds")
+                }
+            } catch (e: Exception) {
+                Log.e("HomePresenter", "onSessionComplete error: ${e.message}", e)
+            }
+        }
+    }
 
-            // Reload progress from Firebase (ESP32 already saved it)
-            loadTodayProgress()
-        } else {
-            logEvent("❌ Session too short: ${duration}s (< 60s required)")
-            view.showToast("Session too short! Brush for at least 60 seconds")
+    override fun onProgressUpdate(current: Int, total: Int) {
+        presenterScope.launch(Dispatchers.Main) {
+            try {
+                currentProgress = current
+                view.showProgress(current, total)
+                logEvent("Progress updated: $current/$total sessions")
+            } catch (e: Exception) {
+                Log.e("HomePresenter", "onProgressUpdate error: ${e.message}", e)
+            }
+        }
+    }
+
+    override fun onSessionDotsUpdate(morning: Boolean, afternoon: Boolean, evening: Boolean) {
+        presenterScope.launch(Dispatchers.Main) {
+            try {
+                view.updateSessionDots(morning, afternoon, evening)
+                logEvent("Session dots: AM=$morning NN=$afternoon PM=$evening")
+            } catch (e: Exception) {
+                Log.e("HomePresenter", "onSessionDotsUpdate error: ${e.message}", e)
+            }
+        }
+    }
+
+    override fun onEventLog(event: String) {
+        presenterScope.launch(Dispatchers.Main) {
+            try {
+                logEvent(event)
+            } catch (e: Exception) {
+                Log.e("HomePresenter", "onEventLog error: ${e.message}", e)
+            }
         }
     }
 
     override fun onError(error: String) {
-        logEvent("❌ Error: $error")
-        view.showToast("Error: $error")
+        presenterScope.launch(Dispatchers.Main) {
+            try {
+                logEvent("❌ Error: $error")
+                view.showToast("Error: $error")
+            } catch (e: Exception) {
+                Log.e("HomePresenter", "onError error: ${e.message}", e)
+            }
+        }
     }
 
     // ========== Session Management ==========
@@ -204,30 +307,44 @@ class HomePresenter(
     // ========== Data Loading ==========
 
     private fun loadTodayProgress() {
-        firebaseManager.getTodayProgress { progress ->
-            progress?.let {
-                val completed = it["completedSessions"] as? Int ?: 0
-                currentProgress = completed
+        try {
+            firebaseManager.getTodayProgress { progress ->
+                presenterScope.launch(Dispatchers.Main) {
+                    try {
+                        progress?.let {
+                            val completed = it["completedSessions"] as? Int ?: 0
+                            currentProgress = completed
 
-                view.showProgress(completed, 3)
-                view.updateSessionDots(
-                    morning = it["morningCompleted"] as? Boolean ?: false,
-                    afternoon = it["afternoonCompleted"] as? Boolean ?: false,
-                    evening = it["eveningCompleted"] as? Boolean ?: false
-                )
+                            view.showProgress(completed, 3)
+                            view.updateSessionDots(
+                                morning = it["morningCompleted"] as? Boolean ?: false,
+                                afternoon = it["afternoonCompleted"] as? Boolean ?: false,
+                                evening = it["eveningCompleted"] as? Boolean ?: false
+                            )
 
-                logEvent("Progress loaded: $completed/3 sessions")
-            } ?: run {
-                currentProgress = 0
-                view.showProgress(0, 3)
-                view.updateSessionDots(false, false, false)
-                logEvent("No progress data for today")
+                            logEvent("Progress loaded: $completed/3 sessions")
+                        } ?: run {
+                            currentProgress = 0
+                            view.showProgress(0, 3)
+                            view.updateSessionDots(false, false, false)
+                            logEvent("No progress data for today")
+                        }
+                    } catch (e: Exception) {
+                        Log.e("HomePresenter", "loadTodayProgress callback error: ${e.message}", e)
+                    }
+                }
             }
+        } catch (e: Exception) {
+            Log.e("HomePresenter", "loadTodayProgress error: ${e.message}", e)
         }
     }
 
     private fun logEvent(event: String) {
-        val timestamp = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-        view.addEventLog("[$timestamp] $event")
+        try {
+            val timestamp = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+            view.addEventLog("[$timestamp] $event")
+        } catch (e: Exception) {
+            Log.e("HomePresenter", "logEvent error: ${e.message}", e)
+        }
     }
 }

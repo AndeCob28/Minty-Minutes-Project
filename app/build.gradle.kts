@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.mintyminutes"
-    compileSdk = 34  // Changed from 36 to 34
+    compileSdk = 34
 
     buildFeatures {
         dataBinding = true
@@ -19,7 +19,6 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -32,14 +31,19 @@ android {
             )
         }
     }
+
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17  // Changed from 1.8 to 17
-        targetCompatibility = JavaVersion.VERSION_17  // Changed from 1.8 to 17
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"  // Changed from 1.8 to 17
+
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 }
+
 
 dependencies {
     implementation(libs.androidx.core.ktx)
